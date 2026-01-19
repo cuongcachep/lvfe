@@ -13,7 +13,8 @@ interface SanPhamGioHang {
 }
 
 function KetQuaThanhToan() {
-  const [trangThai, setTrangThai] = useState<boolean>(false);
+  const [trangThai, setTrangThai] = useState<boolean | null>(null); // null = đang loading
+  const [dangTai, setDangTai] = useState<boolean>(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,6 +59,7 @@ function KetQuaThanhToan() {
 
         const success = backendSuccess || legacySuccess || vnpSuccess;
         setTrangThai(success);
+        setDangTai(false);
 
         if (success) {
           // Xóa giỏ hàng sau khi thanh toán thành công
@@ -72,6 +74,8 @@ function KetQuaThanhToan() {
       })
       .catch((error) => {
         console.error('Lỗi:', error);
+        setTrangThai(false);
+        setDangTai(false);
         alert('Không thể xác minh kết quả thanh toán. Vui lòng thử lại hoặc liên hệ hỗ trợ.');
       });
   }, [navigate]);
@@ -84,14 +88,26 @@ function KetQuaThanhToan() {
             <div className="card-header bg-dark text-white">
               <h4 className="mb-0">Trạng thái thanh toán của đơn hàng</h4>
             </div>
-            <div className="card-body" style={{ display: 'flex', justifyContent: 'center' }}>
-              <div>
-                {trangThai ? (
-                  <img src="/image/susses.png" alt="Success" />
+            <div className="card-body" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+              <div style={{ textAlign: 'center' }}>
+                {dangTai ? (
+                  <>
+                    <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                      <span className="visually-hidden">Đang tải...</span>
+                    </div>
+                    <h4 className="mt-3">Đang xác minh kết quả thanh toán...</h4>
+                  </>
+                ) : trangThai ? (
+                  <>
+                    <img src="/image/susses.png" alt="Success" />
+                    <h1>Thanh toán thành công</h1>
+                  </>
                 ) : (
-                  <img src="/image/download.png" alt="Failed" />
+                  <>
+                    <img src="/image/download.png" alt="Failed" />
+                    <h1>Thanh toán thất bại</h1>
+                  </>
                 )}
-                {trangThai ? <h1>Thanh toán thành công</h1> : <h1>Thanh toán thất bại</h1>}
               </div>
             </div>
           </div>

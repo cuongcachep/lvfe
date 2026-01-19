@@ -18,6 +18,7 @@ export default function UserComponent() {
   const [nguoiDung, setNguoiDung] = useState<string>();
   const [quyenList, setQuyenList] = useState<any[]>([]);
   const [selectedQuyen, setSelectedQuyen] = useState<any[]>([]);
+  const [dangTaiQuyen, setDangTaiQuyen] = useState(false);
   const navigate = useNavigate();
 
 
@@ -54,7 +55,37 @@ export default function UserComponent() {
 
   const phanTrang = (trang: number) => setTrangHienTai(trang);
 
-
+  // Hàm lấy quyền của user theo userId
+  const fetchQuyenByUserId = async (userId: number) => {
+    setDangTaiQuyen(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/admin/user/${userId}/quyen`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem('jwt')}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Nếu API trả về mảng số [1, 2, 3]
+        if (Array.isArray(data) && typeof data[0] === 'number') {
+          setSelectedQuyen(data);
+        }
+        // Nếu API trả về mảng object [{maQuyen: 1}, {maQuyen: 2}]
+        else if (Array.isArray(data) && data[0]?.maQuyen) {
+          setSelectedQuyen(data.map((item: any) => item.maQuyen));
+        } else {
+          setSelectedQuyen([]);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy quyền:", error);
+    } finally {
+      setDangTaiQuyen(false);
+    }
+  };
 
   const handleAdd = () => {
     try {
@@ -127,7 +158,8 @@ export default function UserComponent() {
                       onClick={() => {
                         setShowModal(true);
                         setUserId(user.maNguoiDung);
-                        setNguoiDung(user.hoDem +" "+user.ten)
+                        setNguoiDung(user.hoDem + " " + user.ten);
+                        fetchQuyenByUserId(user.maNguoiDung);
                       }}
                     >
                       Phân quyền
@@ -153,29 +185,38 @@ export default function UserComponent() {
                 <h5 className="modal-title">Phân quyền cho {nguoiDung}</h5>
               </div>
               <div className="modal-body">
-                <ul>
-                  {quyenList
-                    .filter(
-                      (item) =>
-                        item &&
-                        item.maQuyen != null &&
-                        item.tenQuyen != null &&
-                        item.tenQuyen.toLowerCase() !== "null"
-                    )
-                    .map((item) => (
-                      <li key={item.maQuyen}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            value={item.maQuyen}
-                            checked={selectedQuyen.includes(item.maQuyen)}
-                            onChange={() => handleCheckboxChange(item.maQuyen)}
-                          />
-                          {item.tenQuyen}
-                        </label>
-                      </li>
-                    ))}
-                </ul>
+                {dangTaiQuyen ? (
+                  <div className="text-center">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p className="mt-2">Đang tải quyền...</p>
+                  </div>
+                ) : (
+                  <ul>
+                    {quyenList
+                      .filter(
+                        (item) =>
+                          item &&
+                          item.maQuyen != null &&
+                          item.tenQuyen != null &&
+                          item.tenQuyen.toLowerCase() !== "null"
+                      )
+                      .map((item) => (
+                        <li key={item.maQuyen}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              value={item.maQuyen}
+                              checked={selectedQuyen.includes(item.maQuyen)}
+                              onChange={() => handleCheckboxChange(item.maQuyen)}
+                            />
+                            {item.tenQuyen}
+                          </label>
+                        </li>
+                      ))}
+                  </ul>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-primary" onClick={()=>{
